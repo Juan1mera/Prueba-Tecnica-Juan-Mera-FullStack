@@ -7,10 +7,8 @@ RUN mvn clean package -DskipTests
 
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
-
 COPY --from=builder /app/target/tasksync-0.0.1-SNAPSHOT.jar app.jar
 
-# Variables de entorno por defecto
 ENV DB_URL=jdbc:mysql://mysql:3306/tasksync_db
 ENV DB_USERNAME=tasksync_user
 ENV DB_PASSWORD=secret123
@@ -18,4 +16,4 @@ ENV SPRING_PROFILES_ACTIVE=prod
 
 EXPOSE 3000
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar", "--server.address=0.0.0.0", "--server.port=3000"]
