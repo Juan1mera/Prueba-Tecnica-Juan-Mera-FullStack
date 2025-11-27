@@ -88,6 +88,33 @@ public class TaskService {
         taskRepository.deleteById(id);
     }
 
+    public TaskPageResponseDto search(String q, int page, int size) {
+        if (q == null || q.trim().isEmpty()) {
+            // Si no hay término de búsqueda, devolvemos todo (o podrías lanzar error)
+            return findAll(page, size);
+        }
+
+        String searchTerm = q.trim();
+
+        Page<Task> taskPage = taskRepository.findByTitleContainingIgnoreCaseOrContentContainingIgnoreCase(
+                searchTerm, searchTerm, PageRequest.of(page, size)
+        );
+
+        List<TaskResponseDto> content = taskPage.getContent()
+                .stream()
+                .map(this::toResponseDto)
+                .toList();
+
+        return new TaskPageResponseDto(
+                content,
+                taskPage.getNumber(),
+                taskPage.getSize(),
+                taskPage.getTotalElements(),
+                taskPage.getTotalPages(),
+                taskPage.isLast()
+        );
+    }
+
     private TaskResponseDto toResponseDto(Task task) {
         return new TaskResponseDto(
                 task.getId(),

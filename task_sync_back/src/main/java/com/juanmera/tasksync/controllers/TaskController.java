@@ -30,6 +30,17 @@ public class TaskController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<TaskPageResponseDto> searchTasks(
+            @RequestParam(required = false) String q,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        TaskPageResponseDto response = taskService.search(q, page, size);
+        return ResponseEntity.ok(response);
+    }
+
+
     // GET una tarea por ID
     @GetMapping("/{id}")
     public ResponseEntity<TaskResponseDto> getTaskById(@PathVariable String id) {

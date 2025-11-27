@@ -16,4 +16,10 @@ public interface TaskRepository extends JpaRepository<Task, String> {
     List<Task> findByCompleted(boolean completed);
 
     Page<Task> findAllByOrderByCreatedAtDesc(Pageable pageable);
+
+    Page<Task> findByTitleContainingIgnoreCaseOrContentContainingIgnoreCase(
+            String title,
+            String content,
+            Pageable pageable
+    );
 }
