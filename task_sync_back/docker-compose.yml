@@ -1,0 +1,36 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: tasksync-mysql
+    environment:
+      MYSQL_DATABASE: tasksync_db
+      MYSQL_USER: tasksync_user
+      MYSQL_PASSWORD: secret123
+      MYSQL_ROOT_PASSWORD: rootpassword
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-prootpassword"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  app:
+    build: .
+    container_name: tasksync-api
+    ports:
+      - "3000:3000"
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/tasksync_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      DB_USERNAME: tasksync_user
+      DB_PASSWORD: secret123
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  mysql-data:
