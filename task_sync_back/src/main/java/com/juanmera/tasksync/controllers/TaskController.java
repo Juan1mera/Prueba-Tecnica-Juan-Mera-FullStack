@@ -1,5 +1,6 @@
 package com.juanmera.tasksync.controllers;
 
+import com.juanmera.tasksync.dtos.TaskPageResponseDto;
 import com.juanmera.tasksync.dtos.TaskRequestDto;
 import com.juanmera.tasksync.dtos.TaskResponseDto;
 import com.juanmera.tasksync.services.TaskService;
@@ -21,9 +22,12 @@ public class TaskController {
 
     // GET todas las tareas
     @GetMapping
-    public ResponseEntity<List<TaskResponseDto>> getAllTasks() {
-        List<TaskResponseDto> tasks = taskService.findAll();
-        return ResponseEntity.ok(tasks);
+    public ResponseEntity<TaskPageResponseDto> getAllTasks(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        TaskPageResponseDto response = taskService.findAll(page, size);
+        return ResponseEntity.ok(response);
     }
 
     // GET una tarea por ID

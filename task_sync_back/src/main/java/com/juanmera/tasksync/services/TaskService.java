@@ -1,11 +1,14 @@
 package com.juanmera.tasksync.services;
 
+import com.juanmera.tasksync.dtos.TaskPageResponseDto;
 import com.juanmera.tasksync.dtos.TaskRequestDto;
 import com.juanmera.tasksync.dtos.TaskResponseDto;
 import com.juanmera.tasksync.exceptions.ResourceNotFoundException;
 import com.juanmera.tasksync.models.Task;
 import com.juanmera.tasksync.repositories.TaskRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -19,11 +22,24 @@ public class TaskService {
     private TaskRepository taskRepository;
 
     // GET todas las tareas
-    public List<TaskResponseDto> findAll() {
-        return taskRepository.findAllByOrderByCreatedAtDesc()
+    public TaskPageResponseDto findAll(int page, int size) {
+        Page<Task> taskPage = taskRepository.findAllByOrderByCreatedAtDesc(
+                PageRequest.of(page, size)
+        );
+
+        List<TaskResponseDto> content = taskPage.getContent()
                 .stream()
                 .map(this::toResponseDto)
                 .toList();
+
+        return new TaskPageResponseDto(
+                content,
+                taskPage.getNumber(),
+                taskPage.getSize(),
+                taskPage.getTotalElements(),
+                taskPage.getTotalPages(),
+                taskPage.isLast()
+        );
     }
 
     // GET por ID
