@@ -4,27 +4,25 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.UUID;
 
 @Data
 @Entity
-@Table(name = "roles")
-public class Role {
+@Table(name = "task")
+public class Task {
 
     @Id
     @Column(length = 36)
     private String id = UUID.randomUUID().toString();
 
-    @Column(length = 36, unique = true, nullable = false)
-    private String name;
+    @Column(nullable = false, length = 255)
+    private String title;
 
-    @Column(length = 255, nullable = false)
-    private String image;
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String content;
 
-    @Column(length = 255, nullable = false)
-    private String route;
+    @Column(nullable = false)
+    private boolean completed = false;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
@@ -32,14 +30,16 @@ public class Role {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt = LocalDateTime.now();
 
-    @OneToMany(mappedBy = "role", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<UserHasRoles> userHasRoles = new HashSet<>();
+    public Task() {}
 
-    public Role() {}
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
 
     @PreUpdate
-    public void onUpdate() {
+    protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
 }
-
