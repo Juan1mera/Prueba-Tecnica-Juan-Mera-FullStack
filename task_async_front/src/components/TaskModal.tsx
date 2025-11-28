@@ -1,4 +1,3 @@
-// src/components/TaskModal.tsx
 import React, { useState, useEffect } from 'react';
 import {
   Modal,
@@ -40,12 +39,15 @@ export default function TaskModal({ visible, onClose, task }: TaskModalProps) {
   }, [task, visible]);
 
   const handleSave = () => {
-    if (!title.trim()) return;
+    const trimmedTitle = title.trim();
+    const trimmedContent = content.trim();
+
+    if (!trimmedTitle || !trimmedContent) return;
 
     if (isEditing && task) {
-      updateTask(task.id, title.trim(), content.trim());
+      updateTask(task.id, trimmedTitle, trimmedContent);
     } else {
-      addTask(title.trim(), content.trim());
+      addTask(trimmedTitle, trimmedContent);
     }
 
     handleClose();
@@ -56,6 +58,8 @@ export default function TaskModal({ visible, onClose, task }: TaskModalProps) {
     setContent('');
     onClose();
   };
+
+  const isFormValid = title.trim().length > 0 && content.trim().length > 0;
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
@@ -84,11 +88,11 @@ export default function TaskModal({ visible, onClose, task }: TaskModalProps) {
               autoFocus
             />
 
-            <Text style={styles.label}>Descripción</Text>
+            <Text style={styles.label}>Descripción *</Text>
             <CustomInput
               value={content}
               onChangeText={setContent}
-              placeholder="Descripción (opcional)"
+              placeholder="Descripción de la tarea"
               multiline
             />
           </ScrollView>
@@ -98,7 +102,7 @@ export default function TaskModal({ visible, onClose, task }: TaskModalProps) {
             <CustomButton
               title={isEditing ? 'Guardar' : 'Crear'}
               variant="primary"
-              disabled={!title.trim()}
+              disabled={!isFormValid}
               onPress={handleSave}
             />
           </View>
