@@ -10,16 +10,16 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { colors } from '../theme/colors';
-import TaskItem from '../components/TaskItem';
-import OfflineBanner from '../components/OfflineBanner';
-import ErrorBanner from '../components/ErrorBanner';
-import SearchBar from '../components/SearchBar';
-import EmptyState from '../components/EmptyState';
+import { colors } from '../../theme/colors';
+import TaskItem from '../../components/TaskItem';
+import OfflineBanner from '../../components/OfflineBanner';
+import ErrorBanner from '../../components/ErrorBanner';
+import SearchBar from '../../components/SearchBar';
+import EmptyState from '../../components/EmptyState';
+import { RootStackParamList, Task } from '../../../data/store/types';
+import { useTaskStore } from '../../../data/store/taskStore';
+import { useNetworkStatus } from '../../../core/hooks/useNetworkStatus';
 import { homeScreenStyles } from './HomeScreenStyles';
-import { useTaskStore } from '../../data/store/taskStore';
-import { useNetworkStatus } from '../../core/hooks/useNetworkStatus';
-import { RootStackParamList, Task } from '../../data/store/types';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -54,11 +54,11 @@ export default function HomeScreen() {
   };
 
   const handleCreateTask = () => {
-    navigation.navigate('Task'); // ← sin params = creación
+    navigation.navigate('Task'); // sin params = creación
   };
 
   const handleEditTask = (task: Task) => {
-    navigation.navigate('Task', { taskId: task.id }); // ← con taskId = edición
+    navigation.navigate('Task', { taskId: task.id }); // con taskId = edición
   };
 
   const renderFooter = () => {

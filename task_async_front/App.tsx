@@ -4,9 +4,9 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import notifee from '@notifee/react-native';
 import { Platform } from 'react-native';
-import HomeScreen from './src/presentation/screens/HomeScreen';
-import TaskScreen from './src/presentation/screens/TaskScreen';
+import TaskScreen from './src/presentation/screens/task_screen/TaskScreen';
 import { RootStackParamList } from './src/data/store/types';
+import HomeScreen from './src/presentation/screens/home_screen/HomeScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
