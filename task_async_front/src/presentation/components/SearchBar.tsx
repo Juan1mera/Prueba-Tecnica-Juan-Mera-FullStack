@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { colors } from '../theme/colors';
-import { useTaskStore } from '../store/taskStore';
+import { useTaskStore } from '../../data/store/taskStore';
 
 export default function SearchBar() {
   const [localQuery, setLocalQuery] = useState('');

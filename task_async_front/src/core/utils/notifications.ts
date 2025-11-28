@@ -1,7 +1,6 @@
-// src/utils/notifications.ts
 import notifee, { AndroidImportance, TriggerType, EventType } from '@notifee/react-native';
 import { Platform } from 'react-native';
-import { Task } from '../store/types';
+import { Task } from '../../data/store/types';
 
 // Crear canal de notificaciones (solo Android)
 async function ensureChannelExists() {

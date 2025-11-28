@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { useTaskStore } from '../store/taskStore';
+import { useTaskStore } from '../../data/store/taskStore';
 
 export default function ErrorBanner() {
   const error = useTaskStore((state) => state.error);

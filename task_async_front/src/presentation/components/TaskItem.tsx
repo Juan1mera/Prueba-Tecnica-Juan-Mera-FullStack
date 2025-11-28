@@ -1,11 +1,11 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { colors } from '../theme/colors';
-import { useTaskStore } from '../store/taskStore';
-import type { Task } from '../store/types';
 import { format, isPast, isToday } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { cancelNotificationForTask } from '../utils/notifications';
+import { useTaskStore } from '../../data/store/taskStore';
+import { Task } from '../../data/store/types';
+import { cancelNotificationForTask } from '../../core/utils/notifications';
 
 type TaskItemProps = {
   task: Task;

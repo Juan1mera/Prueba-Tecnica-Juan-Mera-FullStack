@@ -1,13 +1,12 @@
-// App.tsx
 import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import HomeScreen from './src/screens/HomeScreen';
-import TaskScreen from './src/screens/TaskScreen';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import notifee from '@notifee/react-native';
 import { Platform } from 'react-native';
-import { RootStackParamList } from './src/store/types';
+import HomeScreen from './src/presentation/screens/HomeScreen';
+import TaskScreen from './src/presentation/screens/TaskScreen';
+import { RootStackParamList } from './src/data/store/types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 

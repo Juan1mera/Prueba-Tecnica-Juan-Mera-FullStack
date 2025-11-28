@@ -11,15 +11,15 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors } from '../theme/colors';
-import { useTaskStore } from '../store/taskStore';
-import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import TaskItem from '../components/TaskItem';
 import OfflineBanner from '../components/OfflineBanner';
 import ErrorBanner from '../components/ErrorBanner';
 import SearchBar from '../components/SearchBar';
 import EmptyState from '../components/EmptyState';
-import type { RootStackParamList, Task } from '../store/types';
 import { homeScreenStyles } from './HomeScreenStyles';
+import { useTaskStore } from '../../data/store/taskStore';
+import { useNetworkStatus } from '../../core/hooks/useNetworkStatus';
+import { RootStackParamList, Task } from '../../data/store/types';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 

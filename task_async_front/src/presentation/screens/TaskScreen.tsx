@@ -12,15 +12,15 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useTaskStore } from '../store/taskStore';
-import type { RootStackParamList, Task } from '../store/types';
 import { CustomInput } from '../components/ui/CustomInput';
 import { CustomButton } from '../components/ui/CustomButton';
-import { CustomDatePicker } from '../components/ui/CustomDatePicker'; // ← nuevo
-import { scheduleLocalNotification, cancelNotificationForTask } from '../utils/notifications';
+import { CustomDatePicker } from '../components/ui/CustomDatePicker'; 
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { colors } from '../theme/colors';
+import { useTaskStore } from '../../data/store/taskStore';
+import { RootStackParamList, Task } from '../../data/store/types';
+import { cancelNotificationForTask, scheduleLocalNotification } from '../../core/utils/notifications';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 

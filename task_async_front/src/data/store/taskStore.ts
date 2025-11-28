@@ -3,7 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { taskService } from '../api/taskService';
 import type { Task, PendingAction, TaskPageResponse } from './types';
-import { cancelNotificationForTask, scheduleLocalNotification } from '../utils/notifications';
+import { cancelNotificationForTask, scheduleLocalNotification } from '../../core/utils/notifications';
 
 interface TaskState {
   tasks: Task[];

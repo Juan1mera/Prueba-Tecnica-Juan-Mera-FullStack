@@ -1,7 +1,6 @@
 // __tests__/store/taskStore.test.ts
 import { act } from '@testing-library/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useTaskStore } from '../src/store/taskStore';
 
 // Mock del servicio ANTES de importar nada que lo use
 jest.mock('../src/api/taskService', () => ({
@@ -19,7 +18,8 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 );
 
-import { taskService } from '../src/api/taskService';
+import { taskService } from '../src/data/api/taskService';
+import { useTaskStore } from '../src/data/store/taskStore';
 
 const mockTask = {
   id: '123',

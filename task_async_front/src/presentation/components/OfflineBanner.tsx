@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { colors } from '../theme/colors';
-import { useTaskStore } from '../store/taskStore';
+import { useTaskStore } from '../../data/store/taskStore';
 
 export default function OfflineBanner() {
   const { isOnline, pendingQueue } = useTaskStore();
