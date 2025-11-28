@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+// src/screens/HomeScreen.tsx
+import React, { useEffect } from 'react';
 import {
   View,
   FlatList,
@@ -7,6 +8,8 @@ import {
   Text,
   RefreshControl,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors } from '../theme/colors';
 import { useTaskStore } from '../store/taskStore';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
@@ -14,12 +17,15 @@ import TaskItem from '../components/TaskItem';
 import OfflineBanner from '../components/OfflineBanner';
 import ErrorBanner from '../components/ErrorBanner';
 import SearchBar from '../components/SearchBar';
-import TaskModal from '../components/TaskModal';
 import EmptyState from '../components/EmptyState';
-import type { Task } from '../store/types';
+import type { RootStackParamList, Task } from '../store/types';
 import { homeScreenStyles } from './HomeScreenStyles';
 
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
 export default function HomeScreen() {
+  const navigation = useNavigation<NavigationProp>();
+
   const {
     tasks,
     loading,
@@ -30,9 +36,6 @@ export default function HomeScreen() {
     fetchTasks,
     loadMoreTasks,
   } = useTaskStore();
-
-  const [modalVisible, setModalVisible] = useState(false);
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
 
   useNetworkStatus();
 
@@ -51,18 +54,11 @@ export default function HomeScreen() {
   };
 
   const handleCreateTask = () => {
-    setEditingTask(null);
-    setModalVisible(true);
+    navigation.navigate('Task'); // ← sin params = creación
   };
 
   const handleEditTask = (task: Task) => {
-    setEditingTask(task);
-    setModalVisible(true);
-  };
-
-  const handleCloseModal = () => {
-    setModalVisible(false);
-    setEditingTask(null);
+    navigation.navigate('Task', { taskId: task.id }); // ← con taskId = edición
   };
 
   const renderFooter = () => {
@@ -88,7 +84,7 @@ export default function HomeScreen() {
     <View style={homeScreenStyles.container}>
       <OfflineBanner />
       <ErrorBanner />
-      
+
       <View style={homeScreenStyles.header}>
         <Text style={homeScreenStyles.headerTitle}>Mis Tareas</Text>
         <View style={homeScreenStyles.headerStats}>
@@ -130,12 +126,6 @@ export default function HomeScreen() {
       <TouchableOpacity style={homeScreenStyles.fab} onPress={handleCreateTask}>
         <Text style={homeScreenStyles.fabIcon}>+</Text>
       </TouchableOpacity>
-
-      <TaskModal
-        visible={modalVisible}
-        onClose={handleCloseModal}
-        task={editingTask}
-      />
     </View>
   );
 }

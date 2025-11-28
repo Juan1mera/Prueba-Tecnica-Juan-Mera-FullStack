@@ -5,6 +5,9 @@ export type Task = {
   completed: boolean;
   createdAt: string;
   updatedAt: string;
+  
+  dueDate?: string | null;        
+  reminderDate?: string | null;   
 };
 
 export type TaskPageResponse = {
@@ -18,24 +21,28 @@ export type TaskPageResponse = {
 
 // Tipos extendidos para soportar rollback y sincronización
 export type PendingAction =
-  | { 
-      id: string; 
-      type: 'create_task'; 
-      payload: { 
-        title: string; 
+  | {
+      id: string;
+      type: 'create_task';
+      payload: {
+        title: string;
         content: string;
         tempId?: string;
-      } 
+        dueDate?: string | null;
+        reminderDate?: string | null;
+      };
     }
-  | { 
-      id: string; 
-      type: 'update_task'; 
-      payload: { 
-        id: string; 
-        title: string; 
+  | {
+      id: string;
+      type: 'update_task';
+      payload: {
+        id: string;
+        title: string;
         content: string;
-        previousTask?: Task; 
-      } 
+        dueDate?: string | null;
+        reminderDate?: string | null;
+        previousTask?: Task;
+      };
     }
   | { 
       id: string; 
@@ -58,4 +65,9 @@ export type SearchParams = {
   query: string;
   page?: number;
   size?: number;
+};
+
+export type RootStackParamList = {
+  Home: undefined;
+  Task: { taskId?: string } | undefined; 
 };
