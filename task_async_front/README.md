@@ -1,97 +1,199 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# TaskSync - React Native Task Management App
 
-# Getting Started
+Aplicación movil de gestión de tareas desarrollada en React Native CLI con funcionalidades offline-first y sincronización automática.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## Tabla de Contenidos
 
-## Step 1: Start Metro
+- [Requisitos](#requisitos)
+- [Instalación y Ejecución](#instalación-y-ejecución)
+- [Arquitectura del Proyecto](#arquitectura-del-proyecto)
+- [Decisiones Técnicas](#decisiones-técnicas)
+- [Funcionalidades Nativas](#funcionalidades-nativas)
+- [Mejoras Futuras](#mejoras-futuras)
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+## Requisitos
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+- **Node.js** >= 20.x
+- **React Native CLI** 0.82.1
+- **Android Studio** (para desarrollo Android)
+- **Xcode** (para desarrollo iOS, solo en macOS)
+- **Java Development Kit (JDK)** 11 o superior
 
-```sh
-# Using npm
-npm start
+## Instalación y Ejecución
 
-# OR using Yarn
-yarn start
+### 1. Clonar e instalar dependencias
+```bash
+git clone git@github.com:Juan1mera/Prueba-Tecnica-Juan-Mera-FullStack.git
+cd Prueba-Tecnica-Juan-Mera-FullStack/task_async_front
+npm install
 ```
 
-## Step 2: Build and run your app
-
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
-
-```sh
-# Using npm
+### 2. Configuración para Android
+```bash
+# Ejecutar en modo desarrollo
 npm run android
 
-# OR using Yarn
-yarn android
+# O directamente con React Native CLI
+npx react-native run-android
 ```
 
-### iOS
+### 3. Configuración para iOS
+```bash
+# Instalar dependencias de iOS
+cd ios && pod install && cd ..
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
-```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
+# Ejecutar aplicación
 npm run ios
-
-# OR using Yarn
-yarn ios
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+### 4. Servidor de desarrollo
+```bash
+npm start
+```
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+### 5. Configuración del backend
+La aplicación espera un backend corriendo en:
+```
+http://tu_ipv4_personal:3000/api/tasks
+```
 
-## Step 3: Modify your app
+Al desplegar la api usando la imagen de docker en 'task_sync_back' tendras que revisar la ipv4 de tu pc
 
-Now that you have successfully run the app, let's make changes!
+## Arquitectura del Proyecto
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+```
+.
+├── core/           # Lógica de negocio y utilidades
+│   ├── hooks/      # Custom hooks reutilizables
+│   └── utils/      # Utilidades generales (notificaciones, storage)
+├── data/           # Capa de datos
+│   ├── api/        # Servicios y cliente HTTP
+│   └── store/      # Estado global (Zustand)
+└── presentation/   # Capa de presentación
+    ├── components/ # Componentes reutilizables
+    ├── screens/    # Pantallas principales
+    └── theme/      # Configuración de temas
+```
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+### Patrón de Arquitectura
+La aplicación sigue una arquitectura **por capas** simplificada:
+- **Presentation**: Componentes UI y pantallas
+- **Data**: Gestión de estado y comunicación con API
+- **Core**: Lógica de negocio y utilidades compartidas
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+## Decisiones Técnicas
 
-## Congratulations! :tada:
+### Gestión de Estado: Zustand vs Alternativas
 
-You've successfully run and modified your React Native App. :partying_face:
+**¿Por qué Zustand?**
 
-### Now what?
+- **Simplicidad**: API mínima y fácil de entender
+- **TypeScript**: Soporte nativo excelente sin configuración compleja
+- **Persistencia**: Integración directa con AsyncStorage
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
 
-# Troubleshooting
+### React Native CLI vs Expo
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+**Elección: React Native CLI**
 
-# Learn More
+- **Compilación más rápida**: Sin tiempos de espera largos de Expo build services
+- **Acceso directo a APIs nativas**: Sin necesidad de EAS o configuraciones complejas
+- **Flexibilidad**: Control total sobre el proyecto nativo
+- **Tiempo**: Configuracion inicial y despliegue mas rapido
 
-To learn more about React Native, take a look at the following resources:
+### Otras Decisiones Importantes
 
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+1. **URLs hardcodeadas**: Para desarrollo rápido, sin variables de entorno
+2. **Arquitectura simple**: Sin patrones complejos como Clean Architecture o DDD
+3. **Offline-first**: Sincronización automática cuando vuelve la conexión
+5. **Notificaciones locales**: Usando notifee para máxima compatibilidad
+
+## Funcionalidad Nativa
+
+### Notificaciones Programadas
+
+La aplicación utiliza **@notifee/react-native** para notificaciones locales avanzadas:
+
+```typescript
+// Programar notificación para recordatorio de tarea
+await scheduleLocalNotification(task);
+
+// Configuración para Android
+android: {
+  channelId: 'task_reminders',
+  importance: AndroidImportance.HIGH,
+  sound: 'default',
+  vibration: true,
+  lights: true,
+}
+```
+
+**Características:**
+- Notificaciones persistentes con timestamp
+- Cancelación automática al completar tareas
+- Manejo de eventos en segundo plano
+
+
+## Mejoras Futuras
+
+### Funcionalidades Nativas Extras
+
+**Cámara y Multimedia**
+- Selección de imágenes desde galería o cámara
+- Subida a cloud storage (Firebase/Supabase)
+- Adjuntar imágenes a tareas
+
+**Integración con GPS**
+- Captura de coordenadas (latitud/longitud)
+- Integración con Google Maps SDK
+- Geocoding inverso para direcciones legibles
+- Places API para selección de ubicaciones
+
+**Deep Linking**
+- Enlaces directos a tareas específicas
+- Integración con React Navigation
+- Compartir tareas via URL
+
+### Mejoras de Producto
+
+**Autenticación y Usuarios**
+- Sistema de registro/login
+- Perfiles de usuario
+- Sincronización multi-dispositivo
+
+**Colaboración**
+- Compartir tareas con otros usuarios
+- Comentarios y asignaciones
+- Notificaciones push para colaboraciones
+
+**Características Avanzadas**
+- Categorías y etiquetas
+- Búsqueda avanzada con filtros
+- Exportar y generar informes
+- Modo oscuro de la aplicacion
+
+### Mejoras Técnicas
+
+**Infraestructura**
+- Variables de entorno para configuración
+- Testing E2E con Detox
+- Monitoreo de errores (Sentry)
+
+
+## Errores
+
+### Problemas durante el desarrollo
+
+**Error de conexión con backend:**
+- Mi migracion a react native cli fue debido a la dificultad con expo para poder hacer peticiones a una api local
+- Para facilidad de uso y evitar errores en el backend hago uso de la ipv4 del dispositivo
+
+**Problemas con notificaciones en Android:**
+- Verifica los canales de notificación
+- Confirma permisos de notificación
+- Revisa configuración de "No Molestar"
+
+**Problemas de sincronización offline:**
+- Bug de duplicado, al ejecutar cualquier accion en el modo offline al conectarse se ejecutaba dos veces
+- Se guardaba en cola acciones aunque se ejecutaran en modo online
+
