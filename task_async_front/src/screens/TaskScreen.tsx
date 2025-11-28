@@ -1,3 +1,4 @@
+// src/screens/TaskScreen.tsx
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -15,12 +16,11 @@ import { useTaskStore } from '../store/taskStore';
 import type { RootStackParamList, Task } from '../store/types';
 import { CustomInput } from '../components/ui/CustomInput';
 import { CustomButton } from '../components/ui/CustomButton';
-import { CustomDatePicker } from '../components/ui/CustomDatePicker';
+import { CustomDatePicker } from '../components/ui/CustomDatePicker'; // ← nuevo
 import { scheduleLocalNotification, cancelNotificationForTask } from '../utils/notifications';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { colors } from '../theme/colors';
-
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -36,6 +36,7 @@ export default function TaskScreen() {
   const [content, setContent] = useState('');
   const [dueDate, setDueDate] = useState<Date | null>(null);
   const [reminderDate, setReminderDate] = useState<Date | null>(null);
+
   const [showDuePicker, setShowDuePicker] = useState(false);
   const [showReminderPicker, setShowReminderPicker] = useState(false);
 
@@ -65,7 +66,6 @@ export default function TaskScreen() {
     if (isEditing && task) {
       await updateTask(task.id, trimmedTitle, trimmedContent, dueIso, reminderIso);
 
-      // Reprogramar notificación
       await cancelNotificationForTask(task.id);
       if (reminderIso) {
         await scheduleLocalNotification({
@@ -78,7 +78,6 @@ export default function TaskScreen() {
       }
     } else {
       const newTask = await addTask(trimmedTitle, trimmedContent, dueIso, reminderIso);
-
       if (reminderIso && newTask) {
         await scheduleLocalNotification(newTask);
       }
@@ -120,7 +119,7 @@ export default function TaskScreen() {
       <View style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backText}>←</Text>
+            <Text style={styles.backText}>Back</Text>
           </TouchableOpacity>
           <Text style={styles.title}>{isEditing ? 'Editar Tarea' : 'Nueva Tarea'}</Text>
           {isEditing && (
@@ -144,21 +143,30 @@ export default function TaskScreen() {
           />
 
           <Text style={styles.label}>Fecha límite</Text>
-          <TouchableOpacity style={styles.dateButton} onPress={() => setShowDuePicker(true)}>
+          <TouchableOpacity
+            style={styles.dateButton}
+            onPress={() => setShowDuePicker(true)}
+          >
             <Text style={dueDate ? styles.dateText : styles.placeholderText}>
               {dueDate ? formatDate(dueDate) : 'Opcional'}
             </Text>
           </TouchableOpacity>
 
           <Text style={styles.label}>Recordatorio</Text>
-          <TouchableOpacity style={styles.dateButton} onPress={() => setShowReminderPicker(true)}>
+          <TouchableOpacity
+            style={styles.dateButton}
+            onPress={() => setShowReminderPicker(true)}
+          >
             <Text style={reminderDate ? styles.dateText : styles.placeholderText}>
               {reminderDate ? formatDate(reminderDate) : 'Sin recordatorio'}
             </Text>
           </TouchableOpacity>
 
           {reminderDate && (
-            <TouchableOpacity onPress={() => setReminderDate(null)} style={styles.clearReminder}>
+            <TouchableOpacity
+              onPress={() => setReminderDate(null)}
+              style={styles.clearReminder}
+            >
               <Text style={styles.clearText}>Quitar recordatorio</Text>
             </TouchableOpacity>
           )}
@@ -175,10 +183,11 @@ export default function TaskScreen() {
         </View>
       </View>
 
-      {/* Date Pickers */}
+      {/* NUEVOS PICKERS - 100% estables */}
       <CustomDatePicker
         visible={showDuePicker}
         date={dueDate || new Date()}
+        title="Fecha límite"
         onConfirm={(date) => {
           setDueDate(date);
           setShowDuePicker(false);
@@ -190,6 +199,7 @@ export default function TaskScreen() {
         visible={showReminderPicker}
         date={reminderDate || new Date()}
         minimumDate={new Date()}
+        title="Recordatorio"
         onConfirm={(date) => {
           setReminderDate(date);
           setShowReminderPicker(false);
@@ -200,6 +210,7 @@ export default function TaskScreen() {
   );
 }
 
+// (Los styles se mantienen exactamente iguales que tenías antes)
 const styles = StyleSheet.create({
   container: {
     flex: 1,

@@ -16,53 +16,52 @@ export const taskService = {
     return response.data;
   },
 
-  async createTask(title: string, content: string): Promise<Task> {
+  async createTask(
+    title: string,
+    content: string,
+    dueDate?: string | null,
+    reminderDate?: string | null
+  ): Promise<Task> {
     const trimmedTitle = title.trim();
     const trimmedContent = content.trim();
 
-    if (!trimmedTitle) {
-      throw new Error('El titulo es obligatorio');
-    }
+    if (!trimmedTitle) throw new Error('El título es obligatorio');
+    if (!trimmedContent) throw new Error('La descripción es obligatoria');
 
-    if (!trimmedContent) {
-      throw new Error('La descripcion es obligatoria');
-    }
-
-    const payload = {
+    const payload: any = {
       title: trimmedTitle,
       content: trimmedContent,
     };
 
-    console.log('Creando tarea con payload:', JSON.stringify(payload, null, 2));
+    if (dueDate) payload.dueDate = dueDate;
+    if (reminderDate) payload.reminderDate = reminderDate;
 
-    const response = await api.post('', payload, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-    });
-    
-    console.log('Tarea creada exitosamente:', response.data);
+    const response = await api.post('', payload);
     return response.data;
   },
 
-  async updateTask(id: string, title: string, content: string): Promise<Task> {
+  async updateTask(
+    id: string,
+    title: string,
+    content: string,
+    dueDate?: string | null,
+    reminderDate?: string | null
+  ): Promise<Task> {
     const trimmedTitle = title.trim();
     const trimmedContent = content.trim();
 
-    if (!trimmedTitle) {
-      throw new Error('El titulo es obligatorio');
-    }
+    if (!trimmedTitle) throw new Error('El título es obligatorio');
+    if (!trimmedContent) throw new Error('La descripción es obligatoria');
 
-    if (!trimmedContent) {
-      throw new Error('La descripcion es obligatoria');
-    }
-
-    const response = await api.put(`/${id}`, {
+    const payload: any = {
       title: trimmedTitle,
       content: trimmedContent,
-    });
-    
+    };
+
+    if (dueDate !== undefined) payload.dueDate = dueDate;
+    if (reminderDate !== undefined) payload.reminderDate = reminderDate;
+
+    const response = await api.put(`/${id}`, payload);
     return response.data;
   },
 
