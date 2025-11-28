@@ -16,11 +16,43 @@ export type TaskPageResponse = {
   last: boolean;
 };
 
+// Tipos extendidos para soportar rollback y sincronización
 export type PendingAction =
-  | { id: string; type: 'create_task'; payload: { title: string; content: string } }
-  | { id: string; type: 'update_task'; payload: { id: string; title: string; content: string } }
-  | { id: string; type: 'toggle_task'; payload: { id: string } }
-  | { id: string; type: 'delete_task'; payload: { id: string } };
+  | { 
+      id: string; 
+      type: 'create_task'; 
+      payload: { 
+        title: string; 
+        content: string;
+        tempId?: string;
+      } 
+    }
+  | { 
+      id: string; 
+      type: 'update_task'; 
+      payload: { 
+        id: string; 
+        title: string; 
+        content: string;
+        previousTask?: Task; 
+      } 
+    }
+  | { 
+      id: string; 
+      type: 'toggle_task'; 
+      payload: { 
+        id: string;
+        previousCompleted?: boolean; 
+      } 
+    }
+  | { 
+      id: string; 
+      type: 'delete_task'; 
+      payload: { 
+        id: string;
+        previousTasks?: Task[]; 
+      } 
+    };
 
 export type SearchParams = {
   query: string;

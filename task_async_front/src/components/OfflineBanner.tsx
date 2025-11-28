@@ -11,7 +11,7 @@ export default function OfflineBanner() {
   return (
     <View style={styles.banner}>
       <Text style={styles.text}>
-        📴 Sin conexión • {pendingQueue.length} {pendingQueue.length === 1 ? 'acción pendiente' : 'acciones pendientes'}
+        Sin conexión • {pendingQueue.length} {pendingQueue.length === 1 ? 'acción pendiente' : 'acciones pendientes'}
       </Text>
     </View>
   );

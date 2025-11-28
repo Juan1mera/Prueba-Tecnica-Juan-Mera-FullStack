@@ -12,6 +12,7 @@ import { useTaskStore } from '../store/taskStore';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import TaskItem from '../components/TaskItem';
 import OfflineBanner from '../components/OfflineBanner';
+import ErrorBanner from '../components/ErrorBanner';
 import SearchBar from '../components/SearchBar';
 import TaskModal from '../components/TaskModal';
 import EmptyState from '../components/EmptyState';
@@ -86,6 +87,7 @@ export default function HomeScreen() {
   return (
     <View style={homeScreenStyles.container}>
       <OfflineBanner />
+      <ErrorBanner />
       
       <View style={homeScreenStyles.header}>
         <Text style={homeScreenStyles.headerTitle}>Mis Tareas</Text>
@@ -137,4 +139,3 @@ export default function HomeScreen() {
     </View>
   );
 }
-
