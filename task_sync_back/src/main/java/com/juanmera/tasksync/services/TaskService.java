@@ -54,19 +54,22 @@ public class TaskService {
         Task task = new Task();
         task.setTitle(request.title());
         task.setContent(request.content());
+        task.setDueDate(request.dueDate());
+        task.setReminderDate(request.reminderDate());
         task.setCompleted(false);
 
         Task saved = taskRepository.save(task);
         return toResponseDto(saved);
     }
 
-    // PUT actualizar tarea
     public TaskResponseDto update(String id, TaskRequestDto request) {
         Task task = taskRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Tarea no encontrada con id: " + id));
 
         task.setTitle(request.title());
         task.setContent(request.content());
+        task.setDueDate(request.dueDate());
+        task.setReminderDate(request.reminderDate());
 
         return toResponseDto(taskRepository.save(task));
     }
@@ -120,6 +123,8 @@ public class TaskService {
                 task.getId(),
                 task.getTitle(),
                 task.getContent(),
+                task.getDueDate(),
+                task.getReminderDate(),
                 task.isCompleted(),
                 task.getCreatedAt(),
                 task.getUpdatedAt()

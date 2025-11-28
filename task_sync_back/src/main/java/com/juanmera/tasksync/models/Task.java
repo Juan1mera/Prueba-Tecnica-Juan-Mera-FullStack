@@ -21,6 +21,12 @@ public class Task {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
+    @Column(name = "due_date") // ← NUEVO
+    private LocalDateTime dueDate;
+
+    @Column(name = "reminder_date") // ← NUEVO
+    private LocalDateTime reminderDate;
+
     @Column(nullable = false)
     private boolean completed = false;
 
@@ -29,8 +35,6 @@ public class Task {
 
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt = LocalDateTime.now();
-
-    public Task() {}
 
     @PrePersist
     protected void onCreate() {
