@@ -22,8 +22,8 @@ interface TaskState {
   fetchTasks: (refresh?: boolean) => Promise<void>;
   loadMoreTasks: () => Promise<void>;
   searchTasks: (query: string) => Promise<void>;
-  addTask: (title: string, content?: string, dueDate?: string | null, reminderDate?: string | null) => Promise<void>;
-  updateTask: (id: string, title: string, content: string, dueDate?: string | null, reminderDate?: string | null) => Promise<void>;
+  addTask: (title: string, content?: string, dueDate?: string | null, reminderDate?: string | null) => Promise<Task>;
+  updateTask: (id: string, title: string, content: string, dueDate?: string | null, reminderDate?: string | null) => Promise<Task>;
   toggleTask: (id: string) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
   setOnline: (online: boolean) => void;
@@ -61,7 +61,6 @@ export const useTaskStore = create<TaskState>()(
 
       //=================================
       // Carga la primera página de tareas desde el servidor
-      // Si refresh = true reinicia la lista completa
       //=================================
       fetchTasks: async (refresh = false) => {
         if (refresh) {
@@ -74,8 +73,6 @@ export const useTaskStore = create<TaskState>()(
 
         try {
           const response = await taskService.getTasks(0, 20);
-          // console.log('Tareas cargadas desde API:', response.content.length);
-
           set({
             tasks: response.content,
             currentPage: response.pageNumber,
@@ -85,9 +82,8 @@ export const useTaskStore = create<TaskState>()(
             refreshing: false,
           });
         } catch {
-          // console.warn('Fallo fetchTasks - usando datos locales (offline)');
           set({
-            error: 'Sin conexion. Mostrando tareas locales.',
+            error: 'Sin conexión. Mostrando tareas locales.',
             loading: false,
             refreshing: false,
           });
@@ -95,12 +91,10 @@ export const useTaskStore = create<TaskState>()(
       },
 
       //=================================
-      // Carga la siguiente página de tareas (paginación infinita)
-      // Respeta búsqueda si la hay
+      // Carga la siguiente página de tareas
       //=================================
       loadMoreTasks: async () => {
         const { hasMore, loadingMore, currentPage, searchQuery } = get();
-
         if (!hasMore || loadingMore) return;
 
         set({ loadingMore: true });
@@ -110,11 +104,7 @@ export const useTaskStore = create<TaskState>()(
           let response: TaskPageResponse;
 
           if (searchQuery) {
-            response = await taskService.searchTasks({
-              query: searchQuery,
-              page: nextPage,
-              size: 20,
-            });
+            response = await taskService.searchTasks({ query: searchQuery, page: nextPage, size: 20 });
           } else {
             response = await taskService.getTasks(nextPage, 20);
           }
@@ -127,14 +117,12 @@ export const useTaskStore = create<TaskState>()(
             loadingMore: false,
           }));
         } catch {
-          // console.error('Error cargando mas tareas');
           set({ loadingMore: false });
         }
       },
 
       //=================================
-      // Realiza una búsqueda de tareas o recarga todas si la query está vacía
-      // No funciona aun en modo offline
+      // Búsqueda de tareas
       //=================================
       searchTasks: async (query: string) => {
         set({ loading: true, error: null, searchQuery: query, currentPage: 0 });
@@ -146,8 +134,6 @@ export const useTaskStore = create<TaskState>()(
 
         try {
           const response = await taskService.searchTasks({ query, page: 0, size: 20 });
-          // console.log('Busqueda completada:', response.content.length, 'resultados');
-
           set({
             tasks: response.content,
             currentPage: response.pageNumber,
@@ -156,30 +142,19 @@ export const useTaskStore = create<TaskState>()(
             loading: false,
           });
         } catch {
-          // console.error('Error en busqueda');
-          set({
-            error: 'Error al buscar tareas',
-            loading: false,
-          });
+          set({ error: 'Error al buscar tareas', loading: false });
         }
       },
 
       //=================================
-      // Crea una nueva tarea con actualización
-      // Si está offline, la guarda en cola para sincronizar después
+      // Crea una nueva tarea → AHORA DEVUELVE LA TAREA
       //=================================
-      addTask: async (title, content = '', dueDate?: string | null, reminderDate?: string | null) => {
+      addTask: async (title, content = '', dueDate?: string | null, reminderDate?: string | null): Promise<Task> => {
         const trimmedTitle = title.trim();
         const trimmedContent = content.trim();
 
-        if (!trimmedTitle) {
-          set({ error: 'El título no puede estar vacío' });
-          return;
-        }
-        if (!trimmedContent) {
-          set({ error: 'La descripción no puede estar vacía' });
-          return;
-        }
+        if (!trimmedTitle) throw new Error('El título es obligatorio');
+        if (!trimmedContent) throw new Error('La descripción es obligatoria');
 
         const tempId = `temp_${Date.now()}`;
         const tempTask: Task = {
@@ -201,18 +176,21 @@ export const useTaskStore = create<TaskState>()(
             type: 'create_task',
             payload: { title: trimmedTitle, content: trimmedContent, tempId, dueDate, reminderDate },
           });
-          return;
+          return tempTask;
         }
 
         try {
           const newTask = await taskService.createTask(trimmedTitle, trimmedContent, dueDate, reminderDate);
+
           set((state) => ({
             tasks: state.tasks.map((t) => (t.id === tempId ? newTask : t)),
           }));
+
+
+          return newTask;
         } catch (error: any) {
           let errorMessage = 'Error al crear la tarea';
           if (error.response?.data?.detail) errorMessage = error.response.data.detail;
-          else if (error.response?.data?.title) errorMessage = error.response.data.title;
           else if (error.message) errorMessage = error.message;
 
           set({ error: errorMessage });
@@ -225,29 +203,23 @@ export const useTaskStore = create<TaskState>()(
               payload: { title: trimmedTitle, content: trimmedContent, tempId, dueDate, reminderDate },
             });
           }
+          return tempTask;
         }
       },
 
       //=================================
-      // Actualiza título y contenido de una tarea existente
-      // Actualización optimista + cola offline
+      // Actualiza tarea → AHORA DEVUELVE LA TAREA ACTUALIZADA
       //=================================
-      updateTask: async (id, title, content, dueDate?: string | null, reminderDate?: string | null) => {
+      updateTask: async (id, title, content, dueDate?: string | null, reminderDate?: string | null): Promise<Task> => {
         const trimmedTitle = title.trim();
         const trimmedContent = content.trim();
 
-        if (!trimmedTitle) {
-          set({ error: 'El título no puede estar vacío' });
-          return;
-        }
-        if (!trimmedContent) {
-          set({ error: 'La descripción no puede estar vacía' });
-          return;
-        }
-
-        if (id.startsWith('temp_')) return;
+        if (!trimmedTitle) throw new Error('El título es obligatorio');
+        if (!trimmedContent) throw new Error('La descripción es obligatoria');
+        if (id.startsWith('temp_')) return get().tasks.find(t => t.id === id)!;
 
         const previousTask = get().tasks.find((t) => t.id === id);
+        if (!previousTask) throw new Error('Tarea no encontrada');
 
         set((state) => ({
           tasks: state.tasks.map((t) =>
@@ -264,25 +236,27 @@ export const useTaskStore = create<TaskState>()(
             type: 'update_task',
             payload: { id, title: trimmedTitle, content: trimmedContent, dueDate, reminderDate, previousTask },
           });
-          return;
+          return { ...previousTask, title: trimmedTitle, content: trimmedContent, dueDate, reminderDate };
         }
 
         try {
           const updatedTask = await taskService.updateTask(id, trimmedTitle, trimmedContent, dueDate, reminderDate);
+
           set((state) => ({
             tasks: state.tasks.map((t) => (t.id === id ? updatedTask : t)),
           }));
+
+
+          return updatedTask;
         } catch (error: any) {
           let errorMessage = 'Error al actualizar la tarea';
           if (error.response?.data?.detail) errorMessage = error.response.data.detail;
           else if (error.message) errorMessage = error.message;
 
           set({ error: errorMessage });
-          if (previousTask) {
-            set((state) => ({
-              tasks: state.tasks.map((t) => (t.id === id ? previousTask : t)),
-            }));
-          }
+          set((state) => ({
+            tasks: state.tasks.map((t) => (t.id === id ? previousTask : t)),
+          }));
 
           if (error.response?.status !== 400 && error.response?.status !== 404) {
             await get().addToQueue({
@@ -291,30 +265,23 @@ export const useTaskStore = create<TaskState>()(
               payload: { id, title: trimmedTitle, content: trimmedContent, dueDate, reminderDate, previousTask },
             });
           }
+          return previousTask;
         }
       },
 
       //=================================
-      // Cambia el estado completado de una tarea
-      // Actualización y cola offline
+      // Toggle completado
       //=================================
       toggleTask: async (id) => {
-        if (id.startsWith('temp_')) {
-          // console.warn('No se puede marcar como completada una tarea temporal');
-          return;
-        }
+        if (id.startsWith('temp_')) return;
 
-        const previousCompleted = get().tasks.find(t => t.id === id)?.completed;
-        
+        const previousCompleted = get().tasks.find(t => t.id === id)?.completed ?? false;
+
         set((state) => ({
-          tasks: state.tasks.map((t) =>
-            t.id === id ? { ...t, completed: !t.completed } : t
-          ),
+          tasks: state.tasks.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t)),
         }));
-        // console.log('Tarea toggled localmente ->', id, '| isOnline:', get().isOnline);
 
         if (!get().isOnline) {
-          // console.log('Offline - toggle en cola');
           await get().addToQueue({
             id: Date.now().toString(),
             type: 'toggle_task',
@@ -325,15 +292,15 @@ export const useTaskStore = create<TaskState>()(
 
         try {
           await taskService.toggleTask(id);
-          // console.log('Tarea toggled en servidor ->', id);
+          const task = get().tasks.find(t => t.id === id);
+          if (task?.completed && task.reminderDate) {
+            await cancelNotificationForTask(id);
+          }
         } catch (error: any) {
-          // console.warn('Fallo toggle - revertiendo');
           set((state) => ({
-            tasks: state.tasks.map((t) =>
-              t.id === id ? { ...t, completed: previousCompleted ?? false } : t
-            ),
+            tasks: state.tasks.map((t) => (t.id === id ? { ...t, completed: previousCompleted } : t)),
           }));
-          
+
           if (error.response?.status !== 404) {
             await get().addToQueue({
               id: Date.now().toString(),
@@ -345,34 +312,22 @@ export const useTaskStore = create<TaskState>()(
       },
 
       //=================================
-      // Elimina una tarea (local y remotamente)
-      // Maneja tareas temporales y cola offline
+      // Eliminar tarea
       //=================================
       deleteTask: async (id) => {
         if (id.startsWith('temp_')) {
-          // console.log('Eliminando tarea temporal solo localmente ->', id);
           set((state) => ({
             tasks: state.tasks.filter((t) => t.id !== id),
-          }));
-          
-          set((state) => ({
-            pendingQueue: state.pendingQueue.filter(
-              action => !(action.type === 'create_task' && action.payload.tempId === id)
-            )
+            pendingQueue: state.pendingQueue.filter(a => !(a.type === 'create_task' && a.payload.tempId === id)),
           }));
           await AsyncStorage.setItem('offline-queue', JSON.stringify(get().pendingQueue));
           return;
         }
 
         const previousTasks = get().tasks;
-
-        set((state) => ({
-          tasks: state.tasks.filter((t) => t.id !== id),
-        }));
-        // console.log('Tarea eliminada localmente ->', id);
+        set((state) => ({ tasks: state.tasks.filter((t) => t.id !== id) }));
 
         if (!get().isOnline) {
-          // console.log('Offline - delete en cola');
           await get().addToQueue({
             id: Date.now().toString(),
             type: 'delete_task',
@@ -383,13 +338,9 @@ export const useTaskStore = create<TaskState>()(
 
         try {
           await taskService.deleteTask(id);
-          // console.log('Tarea eliminada en servidor ->', id);
+          await cancelNotificationForTask(id);
         } catch (error: any) {
-          // console.warn('Fallo delete - revertiendo');
-          
-          if (error.response?.status === 404) {
-            // console.log('Tarea ya no existe en servidor - operacion completada');
-          } else {
+          if (error.response?.status !== 404) {
             set({ tasks: previousTasks });
             await get().addToQueue({
               id: Date.now().toString(),
@@ -401,24 +352,18 @@ export const useTaskStore = create<TaskState>()(
       },
 
       //=================================
-      // Añade una acción pendiente a la cola offline y la persiste
+      // Cola offline
       //=================================
       addToQueue: async (action) => {
         set((state) => ({ pendingQueue: [...state.pendingQueue, action] }));
         await AsyncStorage.setItem('offline-queue', JSON.stringify(get().pendingQueue));
-        // console.log('Accion agregada a cola offline:', action.type);
       },
 
-      //=================================
-      // Procesa todas las acciones pendientes cuando vuelve la conexión
-      // Reemplaza IDs temporales y recarga datos del servidor al final
-      //=================================
       processQueue: async () => {
         const queue = [...get().pendingQueue];
         if (queue.length === 0) return;
 
         set({ loading: true });
-
         const remaining: PendingAction[] = [];
         const tempIdReplacements = new Map<string, Task>();
 
@@ -426,97 +371,60 @@ export const useTaskStore = create<TaskState>()(
           try {
             if (action.type === 'create_task') {
               const { title, content, dueDate, reminderDate } = action.payload;
-              const newTask = await taskService.createTask(
-                title,
-                content,
-                dueDate ?? null,
-                reminderDate ?? null
-              );
-
-              if (action.payload.tempId) {
-                tempIdReplacements.set(action.payload.tempId, newTask);
-              }
-
-              // Programar notificación local si tiene reminder
-              if (newTask.reminderDate) {
-                await scheduleLocalNotification(newTask);
-              }
-            } 
+              const newTask = await taskService.createTask(title, content, dueDate ?? null, reminderDate ?? null);
+              if (action.payload.tempId) tempIdReplacements.set(action.payload.tempId, newTask);
+              if (newTask.reminderDate) await scheduleLocalNotification(newTask);
+            }
             else if (action.type === 'update_task') {
               if (!action.payload.id.startsWith('temp_')) {
-                await taskService.updateTask(
+                const task = await taskService.updateTask(
                   action.payload.id,
                   action.payload.title,
                   action.payload.content,
                   action.payload.dueDate ?? null,
                   action.payload.reminderDate ?? null
                 );
-
-                // Volver a programar notificación si cambió
-                const task = get().tasks.find(t => t.id === action.payload.id);
-                if (task?.reminderDate) {
-                  await cancelNotificationForTask(task.id);
-                  await scheduleLocalNotification(task);
-                }
+                await cancelNotificationForTask(action.payload.id);
+                if (task.reminderDate) await scheduleLocalNotification(task);
               }
-            } 
+            }
             else if (action.type === 'toggle_task') {
               if (!action.payload.id.startsWith('temp_')) {
                 await taskService.toggleTask(action.payload.id);
-
                 const task = get().tasks.find(t => t.id === action.payload.id);
-                if (task?.completed && task.reminderDate) {
-                  await cancelNotificationForTask(task.id);
-                }
+                if (task?.completed && task.reminderDate) await cancelNotificationForTask(task.id);
               }
-            } 
+            }
             else if (action.type === 'delete_task') {
               if (!action.payload.id.startsWith('temp_')) {
                 try {
                   await taskService.deleteTask(action.payload.id);
                   await cancelNotificationForTask(action.payload.id);
-                } catch (error: any) {
-                  if (error.response?.status === 404) {
-                    // Ya estaba borrada, ok
-                    await cancelNotificationForTask(action.payload.id);
-                  } else {
-                    throw error;
-                  }
+                } catch (e: any) {
+                  if (e.response?.status === 404) await cancelNotificationForTask(action.payload.id);
+                  else throw e;
                 }
               }
             }
           } catch (error: any) {
-            console.warn('Error procesando acción en cola:', action.type, error.message);
+            console.warn('Error procesando cola:', action.type, error.message);
             remaining.push(action);
-
-            if (error.response?.status === 400) {
-              console.log('Error 400: acción inválida, se descarta');
-              continue;
-            }
-            break; // Detiene el procesamiento si hay error de red u otro grave
+            if (error.response?.status === 400) continue;
+            break;
           }
         }
 
-        // Reemplazar IDs temporales por reales
         if (tempIdReplacements.size > 0) {
           set((state) => ({
-            tasks: state.tasks.map((t) =>
-              tempIdReplacements.has(t.id) ? tempIdReplacements.get(t.id)! : t
-            ),
+            tasks: state.tasks.map((t) => tempIdReplacements.get(t.id) || t),
           }));
         }
 
-        // Actualizar cola persistente
         set({ pendingQueue: remaining, loading: false });
         await AsyncStorage.setItem('offline-queue', JSON.stringify(remaining));
 
-        // Si se sincronizó todo, recargar datos frescos del servidor
         if (remaining.length === 0 && get().isOnline) {
-          try {
-            await get().fetchTasks(true);
-          } catch {
-            console.warn('Error refrescando tareas tras sincronización');
-          }
+          await get().fetchTasks(true).catch(() => {});
         }
       },
     }),

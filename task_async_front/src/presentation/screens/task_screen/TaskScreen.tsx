@@ -12,7 +12,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { CustomInput } from '../../components/ui/CustomInput';
 import { CustomButton } from '../../components/ui/CustomButton';
-import { CustomDatePicker } from '../../components/ui/CustomDatePicker'; 
+import { CustomDatePicker } from '../../components/ui/CustomDatePicker';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useTaskStore } from '../../../data/store/taskStore';
@@ -62,27 +62,49 @@ export default function TaskScreen() {
     const dueIso = dueDate ? toLocalISOString(dueDate) : null;
     const reminderIso = reminderDate ? toLocalISOString(reminderDate) : null;
 
-    if (isEditing && task) {
-      await updateTask(task.id, trimmedTitle, trimmedContent, dueIso, reminderIso);
+    let savedTask: Task;
 
-      await cancelNotificationForTask(task.id);
-      if (reminderIso) {
-        await scheduleLocalNotification({
-          ...task,
-          title: trimmedTitle,
-          content: trimmedContent,
-          dueDate: dueIso,
-          reminderDate: reminderIso,
-        });
+    try {
+      if (isEditing && task) {
+        savedTask = await updateTask(task.id, trimmedTitle, trimmedContent, dueIso, reminderIso);
+      } else {
+        savedTask = await addTask(trimmedTitle, trimmedContent, dueIso, reminderIso);
       }
-    } else {
-      const newTask = await addTask(trimmedTitle, trimmedContent, dueIso, reminderIso);
-      if (reminderIso && newTask) {
-        await scheduleLocalNotification(newTask);
+
+      // Cancelar notificación anterior si existe
+      if (task) {
+        await cancelNotificationForTask(task.id);
       }
+
+      // Programar nueva notificación si hay reminderDate
+      if (savedTask.reminderDate) {
+        const triggerDate = fromLocalISOString(savedTask.reminderDate);
+        
+        if (triggerDate) {
+          const now = Date.now();
+          const triggerTime = triggerDate.getTime();
+          
+          const diffSeconds = Math.floor((triggerTime - now) / 1000);
+          
+          // console.log('Intentando programar notificación:');
+          // console.log('   Ahora:', new Date(now).toLocaleString());
+          // console.log('   Trigger:', triggerDate.toLocaleString());
+          // console.log('   Diferencia:', diffSeconds, 'segundos');
+          
+          if (diffSeconds >= 30) {
+            await scheduleLocalNotification(savedTask);
+            // Alert.alert('Éxito', `Notificación programada para dentro de ${diffSeconds} segundos`);
+          } else {
+            console.warn('Recordatorio muy próximo (menos de 30s), no se programa');
+            Alert.alert('Aviso', 'La fecha del recordatorio debe ser al menos 30 segundos en el futuro');
+          }
+        }
+      }
+
+      navigation.goBack();
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'No se pudo guardar la tarea');
     }
-
-    navigation.goBack();
   };
 
   const handleDelete = () => {
@@ -112,7 +134,7 @@ export default function TaskScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
+      style={TaskScreenStyles.flex1}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={TaskScreenStyles.container}>
@@ -138,7 +160,7 @@ export default function TaskScreen() {
             onChangeText={setContent}
             placeholder="¿Qué hay que hacer?"
             multiline
-            style={{ height: 100, textAlignVertical: 'top' }}
+            style={TaskScreenStyles.height100}
           />
 
           <Text style={TaskScreenStyles.label}>Fecha límite</Text>
@@ -187,8 +209,6 @@ export default function TaskScreen() {
         date={dueDate || new Date()}
         title="Fecha límite"
         onConfirm={(date) => {
-          console.log("Fecha limite")
-          console.log(date.getHours)
           setDueDate(date);
           setShowDuePicker(false);
         }}
@@ -201,8 +221,6 @@ export default function TaskScreen() {
         minimumDate={new Date()}
         title="Recordatorio"
         onConfirm={(date) => {
-          console.log("Fecha limite")
-          console.log(date.getHours)
           setReminderDate(date);
           setShowReminderPicker(false);
         }}
@@ -211,4 +229,3 @@ export default function TaskScreen() {
     </KeyboardAvoidingView>
   );
 }
-

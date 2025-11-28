@@ -1,8 +1,8 @@
-import notifee, { AndroidImportance, TriggerType, EventType } from '@notifee/react-native';
+import notifee, { AndroidImportance, TriggerType } from '@notifee/react-native';
 import { Platform } from 'react-native';
 import { Task } from '../../data/store/types';
+import { fromLocalISOString } from './dateFormatter';
 
-// Crear canal de notificaciones (solo Android)
 async function ensureChannelExists() {
   if (Platform.OS === 'android') {
     await notifee.createChannel({
@@ -16,71 +16,89 @@ async function ensureChannelExists() {
   }
 }
 
-// Programar una notificación local
 export const scheduleLocalNotification = async (task: Task): Promise<void> => {
   if (!task.reminderDate || task.completed) return;
 
-  const triggerDate = new Date(task.reminderDate);
-  if (triggerDate <= new Date()) return;
+  // Usar fromLocalISOString para parsear correctamente
+  const triggerDate = fromLocalISOString(task.reminderDate);
+  
+  if (!triggerDate) {
+    console.warn('Fecha de recordatorio inválida:', task.reminderDate);
+    return;
+  }
 
-  const notificationId = `task_${task.id}`;
+  const now = Date.now();
+  const triggerTime = triggerDate.getTime();
+  
+  const diffMs = triggerTime - now;
+  const diffSeconds = Math.floor(diffMs / 1000);
+
+  // console.log('Fecha actual:', new Date(now).toLocaleString());
+  // console.log('Fecha trigger:', triggerDate.toLocaleString());
+  // console.log('Diferencia:', diffSeconds, 'segundos');
+
+  // Margen de seguridad: mínimo 30 segundos en el futuro
+  const MIN_SECONDS_AHEAD = 30;
+  
+  if (diffSeconds < MIN_SECONDS_AHEAD) {
+    console.warn('Recordatorio debe ser al menos', MIN_SECONDS_AHEAD, 'segundos en el futuro');
+    // console.warn('   Trigger:', triggerDate.toLocaleString());
+    // console.warn('   Ahora:', new Date().toLocaleString());
+    // console.warn('   Diferencia:', diffSeconds, 'segundos');
+    return;
+  }
 
   await ensureChannelExists();
 
-  const timestamp = Math.floor(triggerDate.getTime() / 1000); // segundos
+  const notificationId = `task_${task.id}`;
 
-  await notifee.createTriggerNotification(
-    {
-      id: notificationId,
-      title: 'Recordatorio de tarea',
-      body: task.title,
-      data: { taskId: task.id.toString() },
-      android: {
-        channelId: 'task_reminders',
-        smallIcon: 'ic_launcher',
-        pressAction: { id: 'default' },
-        importance: AndroidImportance.HIGH,
-        autoCancel: false,
-        // Esto hace que suene incluso en No Molestar (Android 8+)
-        timestamp,
-        showTimestamp: true,
-      },
-      ios: {
-        foregroundPresentationOptions: {
-          alert: true,
-          badge: true,
-          sound: true,
+  try {
+    await notifee.createTriggerNotification(
+      {
+        id: notificationId,
+        title: 'Recordatorio de tarea',
+        body: task.title,
+        data: { taskId: task.id.toString() },
+        android: {
+          channelId: 'task_reminders',
+          smallIcon: 'ic_launcher',
+          pressAction: { id: 'default' },
+          importance: AndroidImportance.HIGH,
+          autoCancel: false,
+          timestamp: triggerTime, 
+          showTimestamp: true,
+        },
+        ios: {
+          foregroundPresentationOptions: {
+            alert: true,
+            badge: true,
+            sound: true,
+          },
         },
       },
-    },
-    {
-      type: TriggerType.TIMESTAMP,
-      timestamp,
-      // alarm: true → ya no existe, pero AndroidImportance.HIGH + timestamp lo respeta
-    }
-  );
+      {
+        type: TriggerType.TIMESTAMP,
+        timestamp: triggerTime, 
+      }
+    );
+    console.log('Notificación programada para:', triggerDate.toLocaleString(), `(en ${diffSeconds}s)`);
+  } catch (error) {
+    console.error(' Error programando notificación:', error);
+    // console.error('   Timestamp usado (ms):', triggerTime);
+    // console.error('   Timestamp actual (ms):', Date.now());
+  }
 };
 
-// Cancelar notificación de una tarea específica
 export const cancelNotificationForTask = async (taskId: string): Promise<void> => {
-  const notificationId = `task_${taskId}`;
-  await notifee.cancelTriggerNotification(notificationId);
+  try {
+    await notifee.cancelTriggerNotification(`task_${taskId}`);
+    console.log('Notificación cancelada para task:', taskId);
+  } catch (error) {
+    console.log('Error cancelando notificación:', error);
+  }
 };
 
-// Cancelar TODAS las notificaciones
 export const cancelAllNotifications = async (): Promise<void> => {
   await notifee.cancelAllNotifications();
+  console.log('Todas las notificaciones canceladas');
 };
-
-// Eventos cuando el usuario toca la notificación
-notifee.onForegroundEvent(({ type, detail }) => {
-  if (type === EventType.PRESS) {
-    console.log('Notificación tocada (foreground):', detail.notification?.data);
-  }
-});
-
-notifee.onBackgroundEvent(async ({ type, detail }) => {
-  if (type === EventType.PRESS) {
-    console.log('Notificación tocada (background/cerrada):', detail.notification?.data);
-  }
-});

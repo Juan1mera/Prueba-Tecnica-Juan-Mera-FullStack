@@ -6,6 +6,13 @@ export const TaskScreenStyles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  flex1: {
+    flex: 1
+  },
+  height100: {
+    height: 100, 
+    textAlignVertical: 'top' 
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
