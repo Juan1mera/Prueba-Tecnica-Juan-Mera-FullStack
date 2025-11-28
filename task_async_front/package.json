@@ -7,7 +7,9 @@
     "ios": "react-native run-ios",
     "lint": "eslint .",
     "start": "react-native start",
-    "test": "jest"
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:clear": "jest --clearCache"
   },
   "dependencies": {
     "@notifee/react-native": "^9.1.8",
@@ -54,22 +56,5 @@
   },
   "engines": {
     "node": ">=20"
-  },
-  "jest": {
-    "preset": "react-native",
-    "setupFilesAfterEnv": [
-      "@testing-library/jest-native/extend-expect",
-      "./jest.setup.ts"
-    ],
-    "moduleFileExtensions": [
-      "ts",
-      "tsx",
-      "js",
-      "jsx",
-      "json"
-    ],
-    "transformIgnorePatterns": [
-      "node_modules/(?!(@react-native|react-native)/)"
-    ]
   }
 }

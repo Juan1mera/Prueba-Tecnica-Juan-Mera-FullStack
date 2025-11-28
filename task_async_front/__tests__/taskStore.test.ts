@@ -1,9 +1,8 @@
-// __tests__/store/taskStore.test.ts
 import { act } from '@testing-library/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Mock del servicio ANTES de importar nada que lo use
-jest.mock('../src/api/taskService', () => ({
+jest.mock('../src/data/api/taskService.ts', () => ({
   taskService: {
     createTask: jest.fn(),
     updateTask: jest.fn(),
@@ -258,9 +257,9 @@ describe('taskStore - Comportamiento completo con modo offline', () => {
   });
 
   //=================================
-  // Fetch de tareas carga datos locales si no hay conexión
+  // Fetch de tareas carga datos locales si no hay conexion
   //=================================
-  it('fetchTasks carga datos locales si no hay conexión', async () => {
+  it('fetchTasks carga datos locales si no hay conexion', async () => {
     act(() => {
       useTaskStore.setState({
         tasks: [mockTask],

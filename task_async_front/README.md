@@ -12,7 +12,7 @@
 ## Características principales
 
 - Offline-first con caché ultra-rápido (MMKV)
-- Sincronización automática al recuperar conexión
+- Sincronización automática al recuperar conexion
 - Mutaciones optimistas
 - Notificaciones locales programadas (Notifee)
 - Estado global ligero con Zustand

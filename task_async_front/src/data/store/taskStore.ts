@@ -53,7 +53,7 @@ export const useTaskStore = create<TaskState>()(
       clearError: () => set({ error: null }),
 
       //=================================
-      // Actualiza el estado de conexión (online/offline)
+      // Actualiza el estado de conexion (online/offline)
       //=================================
       setOnline: (online) => {
         set({ isOnline: online });
@@ -83,7 +83,7 @@ export const useTaskStore = create<TaskState>()(
           });
         } catch {
           set({
-            error: 'Sin conexión. Mostrando tareas locales.',
+            error: 'Sin conexion. Mostrando tareas locales.',
             loading: false,
             refreshing: false,
           });
