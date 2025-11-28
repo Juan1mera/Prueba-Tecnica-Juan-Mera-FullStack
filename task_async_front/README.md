@@ -1,199 +1,188 @@
-# TaskSync - React Native Task Management App
 
-Aplicación movil de gestión de tareas desarrollada en React Native CLI con funcionalidades offline-first y sincronización automática.
+# TaskSync – App Móvil de Tareas (React Native CLI)
 
-## Tabla de Contenidos
+![React Native CLI](https://img.shields.io/badge/React_Native_CLI-0.82.1-61DAFB?style=for-the-badge&logo=react)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![Zustand](https://img.shields.io/badge/Zustand-Latest-000000?style=for-the-badge&logo=zustand&logoColor=white)
+![MMKV](https://img.shields.io/badge/MMKV-Fastest-4A90E2?style=for-the-badge)
+![Notifee](https://img.shields.io/badge/Notifee-Advanced_FF5A5F?style=for-the-badge)
 
-- [Requisitos](#requisitos)
-- [Instalación y Ejecución](#instalación-y-ejecución)
-- [Arquitectura del Proyecto](#arquitectura-del-proyecto)
-- [Decisiones Técnicas](#decisiones-técnicas)
-- [Funcionalidades Nativas](#funcionalidades-nativas)
-- [Mejoras Futuras](#mejoras-futuras)
+**Aplicación completa de gestión de tareas** desarrollada con **React Native CLI (bare workflow)**, arquitectura offline-first, sincronización automática, notificaciones locales programadas y rendimiento optimizado.
 
-## Requisitos
+## Características principales
 
-- **Node.js** >= 20.x
-- **React Native CLI** 0.82.1
-- **Android Studio** (para desarrollo Android)
-- **Xcode** (para desarrollo iOS, solo en macOS)
-- **Java Development Kit (JDK)** 11 o superior
+- Offline-first con caché ultra-rápido (MMKV)
+- Sincronización automática al recuperar conexión
+- Mutaciones optimistas
+- Notificaciones locales programadas (Notifee)
+- Estado global ligero con Zustand
+- Arquitectura por capas clara y escalable
+- 100 % TypeScript
 
-## Instalación y Ejecución
 
-### 1. Clonar e instalar dependencias
+## Requisitos previos (obligatorios)
+
+| Herramienta                | Versión mínima       | Notas                                      |
+|----------------------------|----------------------|--------------------------------------------|
+| Node.js                    | ≥ 20.x               | Recomendado 20 o 22 (LTS)                  |
+| npm / yarn / pnpm          | Última versión       | Se usa `npm` en los scripts                |
+| Java JDK                   | 11 o 17              | Necesario para Android                     |
+| Android Studio             | Última versión       | Con SDK 34+ y Android Emulator             |
+| Xcode (solo macOS)         | ≥ 15.0               | Para compilar iOS                          |
+| Watchman (macOS recomendado) | Última versión    | Mejora rendimiento de Metro                |
+
+## Instalación y ejecución paso a paso
+
+### 1. Clonar el repositorio
 ```bash
-git clone git@github.com:Juan1mera/Prueba-Tecnica-Juan-Mera-FullStack.git
+git clone https://github.com/Juan1mera/Prueba-Tecnica-Juan-Mera-FullStack.git
 cd Prueba-Tecnica-Juan-Mera-FullStack/task_async_front
-npm install
 ```
 
-### 2. Configuración para Android
+### 2. Instalar dependencias
 ```bash
-# Ejecutar en modo desarrollo
-npm run android
+npm install
+# o si prefieres yarn/pnpm
+# yarn install
+# pnpm install
+```
 
-# O directamente con React Native CLI
+### 3. Instalar pods (solo iOS – macOS)
+```bash
+cd ios
+pod install --repo-update
+cd ..
+```
+
+### 4. Levantar el backend (¡IMPORTANTE!)
+La app se comunica con el backend Spring Boot que está en la carpeta hermana:
+
+```bash
+# En otra terminal, desde la raíz del repositorio
+cd ../task_sync_back
+docker-compose up -d   # Opción más fácil
+# o con Maven
+./mvnw spring-boot:run
+```
+
+El backend quedará disponible en:  
+**`http://TU_IPv4_LOCAL:3000/api/tasks`**
+
+**Cómo obtener tu IPv4 local:**
+- Windows: `ipconfig` → buscar "IPv4" en adaptador Wi-Fi/Ethernet
+- macOS/Linux: `ifconfig` o `ip addr show` → buscar `inet` (ej: 192.168.1.50)
+
+> **Nota importante**: La app tiene la URL hardcodeada a tu IP local por simplicidad de desarrollo.  
+> Cambia la constante `BASE_URL` en `src/data/api/client.ts` si usas otro puerto o máquina.
+
+### 5. Ejecutar la aplicación
+> **Nota importante**: Asegurate de tener un emulador funcionando antes
+#### Android (recomendado para pruebas rápidas)
+```bash
+npm run android
+```
+O directamente:
+```bash
 npx react-native run-android
 ```
 
-### 3. Configuración para iOS
+#### iOS (solo macOS)
 ```bash
-# Instalar dependencias de iOS
-cd ios && pod install && cd ..
-
-# Ejecutar aplicación
 npm run ios
 ```
 
-### 4. Servidor de desarrollo
+#### Metro Bundler (si no se inicia automáticamente)
 ```bash
-npm start
+npm start -- --reset-cache
 ```
 
-### 5. Configuración del backend
-La aplicación espera un backend corriendo en:
-```
-http://tu_ipv4_personal:3000/api/tasks
-```
+La app se abrirá en tu emulador ya abierto 
 
-Al desplegar la api usando la imagen de docker en 'task_sync_back' tendras que revisar la ipv4 de tu pc
-
-## Arquitectura del Proyecto
+## Estructura del proyecto
 
 ```
-.
-├── core/           # Lógica de negocio y utilidades
-│   ├── hooks/      # Custom hooks reutilizables
-│   └── utils/      # Utilidades generales (notificaciones, storage)
-├── data/           # Capa de datos
-│   ├── api/        # Servicios y cliente HTTP
-│   └── store/      # Estado global (Zustand)
-└── presentation/   # Capa de presentación
-    ├── components/ # Componentes reutilizables
-    ├── screens/    # Pantallas principales
-    └── theme/      # Configuración de temas
+task_async_front/
+├── core/                  -> Lógica de negocio y hooks reutilizables
+│   ├── hooks/             -> useTasks, useSync, useAuth, etc.
+│   └── utils/             -> notificaciones, storage, helpers
+├── data/                  -> Capa de datos
+│   ├── api/               -> Cliente Axios + interceptores
+│   └── store/             -> Stores de Zustand con persistencia
+├── presentation/          -> UI y pantallas
+│   ├── components/        -> UI reutilizable
+│   ├── screens/           -> Home, TaskDetail, Settings...
+│   └── theme/             -> Colores, tipografía
+├── App.tsx
+└── index.js
 ```
 
-### Patrón de Arquitectura
-La aplicación sigue una arquitectura **por capas** simplificada:
-- **Presentation**: Componentes UI y pantallas
-- **Data**: Gestión de estado y comunicación con API
-- **Core**: Lógica de negocio y utilidades compartidas
+**Arquitectura seguida**: Capas simples (Presentation ↔ Data ↔ Core) – limpia, mantenible y escalable.
 
-## Decisiones Técnicas
+## Decisiones técnicas clave
 
-### Gestión de Estado: Zustand vs Alternativas
+### React Native CLI (bare workflow) 
+- Compilación mucho más rápida que Expo
+- Acceso 100 % directo a módulos nativos
+- Control total del proyecto Android/iOS
+- Sin limitaciones de expo, como estar siempre conectado al wifi para pruebas de sincronizacion
 
-**¿Por qué Zustand?**
+### Zustand como estado global
+- API mínima y extremadamente intuitiva
+- Soporte nativo de TypeScript
+- Persistencia integrada con MMKV (más rápido que AsyncStorage)
+- Sin boilerplate (vs Redux)
 
-- **Simplicidad**: API mínima y fácil de entender
-- **TypeScript**: Soporte nativo excelente sin configuración compleja
-- **Persistencia**: Integración directa con AsyncStorage
+### MMKV como almacenamiento local
+- Hasta **50x más rápido** que AsyncStorage
+- Lectura/escritura síncrona
+- Perfecto para caché offline-first
 
+### Notifee para notificaciones locales
+- Máximo control en Android e iOS
+- Canales, sonidos personalizados, luces, acciones
+- Funciona en segundo plano y con la app cerrada
 
-### React Native CLI vs Expo
+### Sincronización offline-first
+- Cola de acciones pendientes
+- Reintentos automáticos al volver a tener red
+- Mutaciones optimistas para mejor UX
+- Solución robusta a duplicados (bug ya corregido)
 
-**Elección: React Native CLI**
+## Funcionalidades nativas implementadas
 
-- **Compilación más rápida**: Sin tiempos de espera largos de Expo build services
-- **Acceso directo a APIs nativas**: Sin necesidad de EAS o configuraciones complejas
-- **Flexibilidad**: Control total sobre el proyecto nativo
-- **Tiempo**: Configuracion inicial y despliegue mas rapido
-
-### Otras Decisiones Importantes
-
-1. **URLs hardcodeadas**: Para desarrollo rápido, sin variables de entorno
-2. **Arquitectura simple**: Sin patrones complejos como Clean Architecture o DDD
-3. **Offline-first**: Sincronización automática cuando vuelve la conexión
-5. **Notificaciones locales**: Usando notifee para máxima compatibilidad
-
-## Funcionalidad Nativa
-
-### Notificaciones Programadas
-
-La aplicación utiliza **@notifee/react-native** para notificaciones locales avanzadas:
-
-```typescript
-// Programar notificación para recordatorio de tarea
-await scheduleLocalNotification(task);
-
-// Configuración para Android
-android: {
-  channelId: 'task_reminders',
-  importance: AndroidImportance.HIGH,
-  sound: 'default',
-  vibration: true,
-  lights: true,
-}
+### Notificaciones locales programadas
+```ts
+await scheduleTaskReminder(task);
 ```
+- Se crean al añadir recordatorio
+- Se cancelan automáticamente al completar/eliminar tarea
+- Funcionan aunque la app esté cerrada
+- Configuración avanzada en Android (canal prioritario, vibración, luces)
 
-**Características:**
-- Notificaciones persistentes con timestamp
-- Cancelación automática al completar tareas
-- Manejo de eventos en segundo plano
+## Próximas mejoras 
 
+| Categoría             | Feature                                  |
+|-----------------------|-------------------------------------------|
+| Multimedia            | Adjuntar fotos a tareas                   
+| GPS                   | Ubicación de tareas + mapas               
+| Deep Linking          | Abrir tareas desde enlace                 
+| Autenticación         | Login/Register + sincronización multi-device 
+| Colaboración          | Compartir tareas con otros usuarios       
+| Monitoreo             | Sentry para errores en producción         
 
-## Mejoras Futuras
+## Solución de problemas comunes
 
-### Funcionalidades Nativas Extras
+| Problema                              | Solución                                                                 |
+|---------------------------------------|--------------------------------------------------------------------------|
+| No conecta con el backend             | Verificar tu IPv4 y que el backend esté en `http://TU_IP:3000`            |
+| Notificaciones no aparecen (Android)  | ir a Ajustes → Apps → TaskSync → Notificaciones → Activar canal         |
+| Duplicado de tareas al sincronizar    | Bug ya corregido – limpiar el storage con `npm run clean`                |
+| Error de Gradle / build               | `./gradlew clean` en carpeta `android` y vuelve a compilar              |
+| Metro no carga                        | `npm start -- --reset-cache`                                             |
 
-**Cámara y Multimedia**
-- Selección de imágenes desde galería o cámara
-- Subida a cloud storage (Firebase/Supabase)
-- Adjuntar imágenes a tareas
+## Autor
 
-**Integración con GPS**
-- Captura de coordenadas (latitud/longitud)
-- Integración con Google Maps SDK
-- Geocoding inverso para direcciones legibles
-- Places API para selección de ubicaciones
+**Juan Mera**  
+FullStack Developer – Especializado en React Native CLI & Spring Boot
 
-**Deep Linking**
-- Enlaces directos a tareas específicas
-- Integración con React Navigation
-- Compartir tareas via URL
-
-### Mejoras de Producto
-
-**Autenticación y Usuarios**
-- Sistema de registro/login
-- Perfiles de usuario
-- Sincronización multi-dispositivo
-
-**Colaboración**
-- Compartir tareas con otros usuarios
-- Comentarios y asignaciones
-- Notificaciones push para colaboraciones
-
-**Características Avanzadas**
-- Categorías y etiquetas
-- Búsqueda avanzada con filtros
-- Exportar y generar informes
-- Modo oscuro de la aplicacion
-
-### Mejoras Técnicas
-
-**Infraestructura**
-- Variables de entorno para configuración
-- Testing E2E con Detox
-- Monitoreo de errores (Sentry)
-
-
-## Errores
-
-### Problemas durante el desarrollo
-
-**Error de conexión con backend:**
-- Mi migracion a react native cli fue debido a la dificultad con expo para poder hacer peticiones a una api local
-- Para facilidad de uso y evitar errores en el backend hago uso de la ipv4 del dispositivo
-
-**Problemas con notificaciones en Android:**
-- Verifica los canales de notificación
-- Confirma permisos de notificación
-- Revisa configuración de "No Molestar"
-
-**Problemas de sincronización offline:**
-- Bug de duplicado, al ejecutar cualquier accion en el modo offline al conectarse se ejecutaba dos veces
-- Se guardaba en cola acciones aunque se ejecutaran en modo online
-
+28 de noviembre de 2025
