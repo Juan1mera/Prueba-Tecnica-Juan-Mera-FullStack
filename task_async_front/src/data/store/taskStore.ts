@@ -147,7 +147,7 @@ export const useTaskStore = create<TaskState>()(
       },
 
       //=================================
-      // Crea una nueva tarea → AHORA DEVUELVE LA TAREA
+      // Crea una nueva tarea
       //=================================
       addTask: async (title, content = '', dueDate?: string | null, reminderDate?: string | null): Promise<Task> => {
         const trimmedTitle = title.trim();
@@ -186,7 +186,6 @@ export const useTaskStore = create<TaskState>()(
             tasks: state.tasks.map((t) => (t.id === tempId ? newTask : t)),
           }));
 
-
           return newTask;
         } catch (error: any) {
           let errorMessage = 'Error al crear la tarea';
@@ -208,7 +207,7 @@ export const useTaskStore = create<TaskState>()(
       },
 
       //=================================
-      // Actualiza tarea → AHORA DEVUELVE LA TAREA ACTUALIZADA
+      // Actualiza tarea 
       //=================================
       updateTask: async (id, title, content, dueDate?: string | null, reminderDate?: string | null): Promise<Task> => {
         const trimmedTitle = title.trim();
@@ -216,38 +215,80 @@ export const useTaskStore = create<TaskState>()(
 
         if (!trimmedTitle) throw new Error('El título es obligatorio');
         if (!trimmedContent) throw new Error('La descripción es obligatoria');
-        if (id.startsWith('temp_')) return get().tasks.find(t => t.id === id)!;
 
         const previousTask = get().tasks.find((t) => t.id === id);
         if (!previousTask) throw new Error('Tarea no encontrada');
 
+        const updatedTask: Task = {
+          ...previousTask,
+          title: trimmedTitle,
+          content: trimmedContent,
+          dueDate,
+          reminderDate,
+          updatedAt: new Date().toISOString()
+        };
+
         set((state) => ({
-          tasks: state.tasks.map((t) =>
-            t.id === id
-              ? { ...t, title: trimmedTitle, content: trimmedContent, dueDate, reminderDate, updatedAt: new Date().toISOString() }
-              : t
-          ),
+          tasks: state.tasks.map((t) => t.id === id ? updatedTask : t),
           error: null,
         }));
 
+        // Si es temporal, actualizar en cola
+        if (id.startsWith('temp_')) {
+          // Buscar si ya existe una acción de creación para este tempId
+          const queueCopy = [...get().pendingQueue];
+          const existingCreateIndex = queueCopy.findIndex(
+            action => action.type === 'create_task' && action.payload.tempId === id
+          );
+
+          if (existingCreateIndex !== -1) {
+            const existingAction = queueCopy[existingCreateIndex];
+            if (existingAction.type === 'create_task') {
+              // Actualizar la acción de creación existente
+              queueCopy[existingCreateIndex] = {
+                ...existingAction,
+                payload: {
+                  ...existingAction.payload,
+                  title: trimmedTitle,
+                  content: trimmedContent,
+                  dueDate,
+                  reminderDate,
+                }
+              };
+              set({ pendingQueue: queueCopy });
+            }
+          } else {
+            // No debería pasar, pero por seguridad agregamos como update
+            await get().addToQueue({
+              id: Date.now().toString(),
+              type: 'update_task',
+              payload: { id, title: trimmedTitle, content: trimmedContent, dueDate, reminderDate, previousTask },
+            });
+          }
+
+          await AsyncStorage.setItem('offline-queue', JSON.stringify(get().pendingQueue));
+          return updatedTask;
+        }
+
+        // Si no está online, encolar
         if (!get().isOnline) {
           await get().addToQueue({
             id: Date.now().toString(),
             type: 'update_task',
             payload: { id, title: trimmedTitle, content: trimmedContent, dueDate, reminderDate, previousTask },
           });
-          return { ...previousTask, title: trimmedTitle, content: trimmedContent, dueDate, reminderDate };
+          return updatedTask;
         }
 
+        // Si está online, enviar al servidor
         try {
-          const updatedTask = await taskService.updateTask(id, trimmedTitle, trimmedContent, dueDate, reminderDate);
+          const serverTask = await taskService.updateTask(id, trimmedTitle, trimmedContent, dueDate, reminderDate);
 
           set((state) => ({
-            tasks: state.tasks.map((t) => (t.id === id ? updatedTask : t)),
+            tasks: state.tasks.map((t) => (t.id === id ? serverTask : t)),
           }));
 
-
-          return updatedTask;
+          return serverTask;
         } catch (error: any) {
           let errorMessage = 'Error al actualizar la tarea';
           if (error.response?.data?.detail) errorMessage = error.response.data.detail;
@@ -270,17 +311,44 @@ export const useTaskStore = create<TaskState>()(
       },
 
       //=================================
-      // Toggle completado
+      // Toggle completado 
       //=================================
       toggleTask: async (id) => {
-        if (id.startsWith('temp_')) return;
+        const previousTask = get().tasks.find(t => t.id === id);
+        if (!previousTask) return;
 
-        const previousCompleted = get().tasks.find(t => t.id === id)?.completed ?? false;
+        const previousCompleted = previousTask.completed;
 
         set((state) => ({
           tasks: state.tasks.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t)),
         }));
 
+        if (id.startsWith('temp_')) {
+          const queueCopy = [...get().pendingQueue];
+          const existingCreateIndex = queueCopy.findIndex(
+            action => action.type === 'create_task' && action.payload.tempId === id
+          );
+
+          if (existingCreateIndex !== -1) {
+            const existingAction = queueCopy[existingCreateIndex];
+            if (existingAction.type === 'create_task') {
+              // Actualizar el completed en la acción de creación
+              queueCopy[existingCreateIndex] = {
+                ...existingAction,
+                payload: {
+                  ...existingAction.payload,
+                  completed: !previousCompleted,
+                }
+              };
+              set({ pendingQueue: queueCopy });
+            }
+          }
+
+          await AsyncStorage.setItem('offline-queue', JSON.stringify(get().pendingQueue));
+          return;
+        }
+
+        // Si no está online, encolar
         if (!get().isOnline) {
           await get().addToQueue({
             id: Date.now().toString(),
@@ -290,6 +358,7 @@ export const useTaskStore = create<TaskState>()(
           return;
         }
 
+        // Si está online, enviar al servidor
         try {
           await taskService.toggleTask(id);
           const task = get().tasks.find(t => t.id === id);
@@ -312,13 +381,15 @@ export const useTaskStore = create<TaskState>()(
       },
 
       //=================================
-      // Eliminar tarea
+      // Eliminar tarea 
       //=================================
       deleteTask: async (id) => {
         if (id.startsWith('temp_')) {
           set((state) => ({
             tasks: state.tasks.filter((t) => t.id !== id),
-            pendingQueue: state.pendingQueue.filter(a => !(a.type === 'create_task' && a.payload.tempId === id)),
+            pendingQueue: state.pendingQueue.filter(a => 
+              !(a.type === 'create_task' && a.payload.tempId === id)
+            ),
           }));
           await AsyncStorage.setItem('offline-queue', JSON.stringify(get().pendingQueue));
           return;
@@ -359,6 +430,9 @@ export const useTaskStore = create<TaskState>()(
         await AsyncStorage.setItem('offline-queue', JSON.stringify(get().pendingQueue));
       },
 
+      //=================================
+      // Procesar cola 
+      //=================================
       processQueue: async () => {
         const queue = [...get().pendingQueue];
         if (queue.length === 0) return;
@@ -370,10 +444,26 @@ export const useTaskStore = create<TaskState>()(
         for (const action of queue) {
           try {
             if (action.type === 'create_task') {
-              const { title, content, dueDate, reminderDate } = action.payload;
-              const newTask = await taskService.createTask(title, content, dueDate ?? null, reminderDate ?? null);
-              if (action.payload.tempId) tempIdReplacements.set(action.payload.tempId, newTask);
-              if (newTask.reminderDate) await scheduleLocalNotification(newTask);
+              const { title, content, dueDate, reminderDate, tempId, completed } = action.payload;
+              
+              // Crear tarea con todos los campos actualizados
+              const newTask = await taskService.createTask(
+                title, 
+                content, 
+                dueDate ?? null, 
+                reminderDate ?? null
+              );
+
+              // Si fue completada mientras estaba offline, hacer toggle
+              if (completed) {
+                await taskService.toggleTask(newTask.id);
+                newTask.completed = true;
+              }
+
+              if (tempId) tempIdReplacements.set(tempId, newTask);
+              if (newTask.reminderDate && !newTask.completed) {
+                await scheduleLocalNotification(newTask);
+              }
             }
             else if (action.type === 'update_task') {
               if (!action.payload.id.startsWith('temp_')) {
@@ -385,14 +475,18 @@ export const useTaskStore = create<TaskState>()(
                   action.payload.reminderDate ?? null
                 );
                 await cancelNotificationForTask(action.payload.id);
-                if (task.reminderDate) await scheduleLocalNotification(task);
+                if (task.reminderDate && !task.completed) {
+                  await scheduleLocalNotification(task);
+                }
               }
             }
             else if (action.type === 'toggle_task') {
               if (!action.payload.id.startsWith('temp_')) {
                 await taskService.toggleTask(action.payload.id);
                 const task = get().tasks.find(t => t.id === action.payload.id);
-                if (task?.completed && task.reminderDate) await cancelNotificationForTask(task.id);
+                if (task?.completed && task.reminderDate) {
+                  await cancelNotificationForTask(task.id);
+                }
               }
             }
             else if (action.type === 'delete_task') {
@@ -401,8 +495,11 @@ export const useTaskStore = create<TaskState>()(
                   await taskService.deleteTask(action.payload.id);
                   await cancelNotificationForTask(action.payload.id);
                 } catch (e: any) {
-                  if (e.response?.status === 404) await cancelNotificationForTask(action.payload.id);
-                  else throw e;
+                  if (e.response?.status === 404) {
+                    await cancelNotificationForTask(action.payload.id);
+                  } else {
+                    throw e;
+                  }
                 }
               }
             }
