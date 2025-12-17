@@ -27,6 +27,7 @@ export type PendingAction =
       payload: {
         title: string;
         content: string;
+        completed?: boolean;
         tempId?: string;
         dueDate?: string | null;
         reminderDate?: string | null;
